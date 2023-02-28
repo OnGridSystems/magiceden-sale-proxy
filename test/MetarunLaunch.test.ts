@@ -3,7 +3,7 @@ import chai, { assert, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { MetarunLaunch } from '../typechain-types';
+import { MetarunCollection, MetarunLaunch } from '../typechain-types';
 
 const { keccak256, getAddress } = ethers.utils;
 
@@ -11,6 +11,7 @@ chai.use(chaiAsPromised);
 
 describe('MetarunLaunch', function () {
   let contract: MetarunLaunch;
+  let collectionContract: MetarunCollection;
   let readonlyContract: MetarunLaunch;
   let owner: SignerWithAddress;
   let readonly: SignerWithAddress;
@@ -49,7 +50,9 @@ describe('MetarunLaunch', function () {
 
   beforeEach(async () => {
     const Collection = await ethers.getContractFactory('MetarunCollection');
-    const metarunCollection = await upgrades.deployProxy(Collection, ['tokenUri']);
+    const metarunCollection = await upgrades.deployProxy(Collection, [
+      'tokenUri',
+    ]);
     await metarunCollection.deployed();
 
     const Launch = await ethers.getContractFactory('MetarunLaunch');
@@ -65,6 +68,7 @@ describe('MetarunLaunch', function () {
     await metarunCollection.grantRole(MINTER_ROLE, launch.address);
 
     [owner, readonly] = await ethers.getSigners();
+    collectionContract = metarunCollection.connect(owner);
     contract = launch.connect(owner);
     readonlyContract = launch.connect(readonly);
     chainId = await ethers.provider.getNetwork().then((n) => n.chainId);
@@ -1139,7 +1143,7 @@ describe('MetarunLaunch', function () {
         contract.mint(5, [ethers.utils.hexZeroPad('0x', 32)], 0, '0x00', {
           value: ethers.utils.parseEther('2.5'),
         }),
-      ).to.emit(contract, 'Transfer');
+      ).to.emit(collectionContract, 'TransferSingle');
 
       let [stageInfo, walletMintedCount, stagedMintedCount] =
         await contract.getStageInfo(0);
@@ -1288,7 +1292,9 @@ describe('MetarunLaunch', function () {
     it('crossmint', async () => {
       const crossmintAddressStr = '0xdAb1a1854214684acE522439684a145E62505233';
       const Collection = await ethers.getContractFactory('MetarunCollection');
-      const metarunCollection = await upgrades.deployProxy(Collection, ['tokenUri']);
+      const metarunCollection = await upgrades.deployProxy(Collection, [
+        'tokenUri',
+      ]);
       await metarunCollection.deployed();
       const Launch = await ethers.getContractFactory('MetarunLaunch');
       const launch = await Launch.deploy(
@@ -1365,7 +1371,9 @@ describe('MetarunLaunch', function () {
       const crossmintAddressStr = '0xdAb1a1854214684acE522439684a145E62505233';
       [owner, readonly] = await ethers.getSigners();
       const Collection = await ethers.getContractFactory('MetarunCollection');
-      const metarunCollection = await upgrades.deployProxy(Collection, ['tokenUri']);
+      const metarunCollection = await upgrades.deployProxy(Collection, [
+        'tokenUri',
+      ]);
       await metarunCollection.deployed();
       const Launch = await ethers.getContractFactory('MetarunLaunch');
       const launch = await Launch.deploy(
@@ -1558,7 +1566,6 @@ describe('MetarunLaunch', function () {
       // todo: need to check resulting balance of ERC1155
       // const address1Balance = await contract.balanceOf(address1.address);
       // expect(address1Balance.toNumber()).to.equal(5);
-
       expect((await contract.totalMinted()).toNumber()).to.equal(10);
     });
 
@@ -1643,7 +1650,9 @@ describe('MetarunLaunch', function () {
     it('can deploy with 0x0 cosign', async () => {
       const [owner, cosigner] = await ethers.getSigners();
       const Collection = await ethers.getContractFactory('MetarunCollection');
-      const metarunCollection = await upgrades.deployProxy(Collection, ['tokenUri']);
+      const metarunCollection = await upgrades.deployProxy(Collection, [
+        'tokenUri',
+      ]);
       await metarunCollection.deployed();
       const Launch = await ethers.getContractFactory('MetarunLaunch');
       const launch = await Launch.deploy(
@@ -1676,7 +1685,9 @@ describe('MetarunLaunch', function () {
     it('can deploy with cosign', async () => {
       const [_, minter, cosigner] = await ethers.getSigners();
       const Collection = await ethers.getContractFactory('MetarunCollection');
-      const metarunCollection = await upgrades.deployProxy(Collection, ['tokenUri']);
+      const metarunCollection = await upgrades.deployProxy(Collection, [
+        'tokenUri',
+      ]);
       await metarunCollection.deployed();
       const Launch = await ethers.getContractFactory('MetarunLaunch');
       const launch = await Launch.deploy(
